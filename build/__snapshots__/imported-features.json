@@ -117,6 +117,7 @@
 	"pr-from-branch",
 	"pr-jump-to-first-non-viewed-file",
 	"pr-notification-link",
+	"pr-test-lines-changed",
 	"prevent-comment-loss",
 	"prevent-duplicate-pr-submission",
 	"prevent-link-loss",
