@@ -1,3 +1,4 @@
+import cx from 'clsx';
 import React from 'dom-chef';
 import * as pageDetect from 'github-url-detection';
 import BeakerIcon from 'octicons-plain-react/Beaker';
@@ -98,8 +99,14 @@ async function add(diffstat: HTMLElement): Promise<void> {
 	];
 
 	// The files API stops at 3000 files, so the totals may not match GitHub's
-	const shownAdditions = $optional(':scope > .color-fg-success', diffstat);
-	const shownDeletions = $optional(':scope > .color-fg-danger', diffstat);
+	const shownAdditions = $optional([
+		':scope > .color-fg-success', // Old view
+		':scope > .fgColor-success',
+	], diffstat);
+	const shownDeletions = $optional([
+		':scope > .color-fg-danger', // Old view
+		':scope > .fgColor-danger',
+	], diffstat);
 	const isIncomplete = looseParseInt(shownAdditions) !== summary.additions || looseParseInt(shownDeletions) !== summary.deletions;
 	if (summary.unanalyzedFiles > 0) {
 		tooltip.push(`${summary.unanalyzedFiles} large files not analyzed`);
@@ -110,7 +117,11 @@ async function add(diffstat: HTMLElement): Promise<void> {
 	diffstat.append(
 		<span
 			ref={withTooltipRef({label: tooltip.join(' · '), direction: 's'})}
-			className="rgh-test-lines-changed ml-2 tmp-ml-2 color-fg-muted"
+			className={cx(
+				'rgh-test-lines-changed ml-2 tmp-ml-2 color-fg-muted',
+				// Match the size and weight of the new view's numbers
+				diffstat.id !== 'diffstat' && 'f6 text-bold',
+			)}
 		>
 			<BeakerIcon className="v-align-middle" />{' '}
 			<span className="color-fg-success">+{format(summary.testAdditions)}</span>{' '}
@@ -120,7 +131,10 @@ async function add(diffstat: HTMLElement): Promise<void> {
 }
 
 function init(signal: AbortSignal): void {
-	observe('#diffstat', add, {signal});
+	observe([
+		'#diffstat', // Old view
+		'[data-component="PH_Navigation"] div:has(> .fgColor-success + .fgColor-danger)',
+	], add, {signal});
 }
 
 void features.add(import.meta.url, {
@@ -129,8 +143,8 @@ void features.add(import.meta.url, {
 	],
 	exclude: [
 		pageDetect.isPRCommit,
-		// Commit ranges, e.g. /pull/1/files/abc..def
-		() => /\/pull\/\d+\/files\/./.test(location.pathname),
+		// Commit ranges, e.g. /pull/1/files/abc..def or /pull/1/changes/abc..def
+		() => /\/pull\/\d+\/(?:files|changes)\/./.test(location.pathname),
 	],
 	init,
 });
